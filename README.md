@@ -6,7 +6,17 @@ Capabilities:
 * Segment objects with **SAM2.1** using point prompts.
 * Points can be obtained by **prompting Molmo** with natural language. Molmo can take inputs by the **text box (typing)** or **Whisper via microphone (speech to text)**.
 
+**Run the Gradio demo using**:
 
+```
+python sam2_molmo_gradio.py
+```
 
 https://github.com/user-attachments/assets/66a0620e-ede3-4018-8ee7-f261790747cb
+
+## Installing Requirements
+
+```
+pip install -r requirements.txt
+```
 

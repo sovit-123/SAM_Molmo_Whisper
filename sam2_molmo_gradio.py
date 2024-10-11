@@ -192,7 +192,8 @@ def process_image(image, prompt, audio):
     """
 
     transcribed_text = ''
-    try:
+
+    if len(prompt) == 0:
         sr, y = audio
     
         # Convert to mono if stereo
@@ -204,8 +205,6 @@ def process_image(image, prompt, audio):
 
         transcribed_text = transcriber({'sampling_rate': sr, 'raw': y})['text'] 
         prompt = transcribed_text
-    except:
-        prompt = prompt
 
     print(prompt)
 
@@ -261,7 +260,8 @@ iface = gr.Interface(
         gr.Textbox(label='Whisper Output'),
     ],
     title='Image Segmentation with SAM2 and Molmo',
-    description='Upload an image and provide a prompt to segment specific objects in the image.',
+    description=f"Upload an image and provide a prompt to segment specific objects in the image. \
+                  Text box input takes precedence. Text box needs to be empty to prompt via voice."
 )
 
 iface.launch(share=True)
