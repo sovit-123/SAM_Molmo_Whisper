@@ -10,7 +10,8 @@ from transformers import (
     AutoModelForCausalLM,
     AutoProcessor,
     GenerationConfig,
-    BitsAndBytesConfig
+    BitsAndBytesConfig,
+    pipeline
 )
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -122,6 +123,12 @@ model = AutoModelForCausalLM.from_pretrained(
     torch_dtype='auto'
 )
 
+# Load the Whisper model.
+transcriber = pipeline(
+    'automatic-speech-recognition',
+    model='openai/whisper-tiny',
+    device='cpu'
+)
 
 def get_coords(output_string, image):
     """
@@ -171,7 +178,7 @@ def get_output(image, prompt='Describe this image.'):
     
     return generated_text
 
-def process_image(image, prompt):
+def process_image(image, prompt, audio):
     """
     Function combining all the components and returning the final 
     segmentation map.
@@ -183,6 +190,25 @@ def process_image(image, prompt):
         fig: Final segmentation map.
         prompt: Prompt from the Molmo model.
     """
+
+    transcribed_text = ''
+    try:
+        sr, y = audio
+    
+        # Convert to mono if stereo
+        if y.ndim > 1:
+            y = y.mean(axis=1)
+    
+        y = y.astype(np.float32)
+        y /= np.max(np.abs(y))
+
+        transcribed_text = transcriber({'sampling_rate': sr, 'raw': y})['text'] 
+        prompt = transcribed_text
+    except:
+        prompt = prompt
+
+    print(prompt)
+
     # Get coordinates from the model output.
     output = get_output(image, prompt)
     coords = get_coords(output, image)
@@ -219,18 +245,20 @@ def process_image(image, prompt):
         borders=True
     )
     
-    return fig, output
+    return fig, output, transcribed_text
 
 # Gradio interface.
 iface = gr.Interface(
     fn=process_image,
     inputs=[
         gr.Image(type='pil', label='Upload Image'),
-        gr.Textbox(label='Prompt', placeholder='e.g., Point where the dog is.')
+        gr.Textbox(label='Prompt', placeholder='e.g., Point where the dog is.'),
+        gr.Audio(sources=['microphone'])
     ],
     outputs=[
         gr.Plot(label='Segmentation Result', format='png'),
-        gr.Textbox(label='Model Output')
+        gr.Textbox(label='Molmo Output'),
+        gr.Textbox(label='Whisper Output'),
     ],
     title='Image Segmentation with SAM2 and Molmo',
     description='Upload an image and provide a prompt to segment specific objects in the image.',
