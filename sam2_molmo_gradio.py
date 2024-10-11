@@ -259,7 +259,7 @@ iface = gr.Interface(
         gr.Textbox(label='Molmo Output'),
         gr.Textbox(label='Whisper Output'),
     ],
-    title='Image Segmentation with SAM2 and Molmo',
+    title='Image Segmentation with SAM2, Molmo, and Whisper',
     description=f"Upload an image and provide a prompt to segment specific objects in the image. \
                   Text box input takes precedence. Text box needs to be empty to prompt via voice."
 )
