@@ -126,7 +126,7 @@ model = AutoModelForCausalLM.from_pretrained(
 # Load the Whisper model.
 transcriber = pipeline(
     'automatic-speech-recognition',
-    model='openai/whisper-tiny',
+    model='openai/whisper-small',
     device='cpu'
 )
 
