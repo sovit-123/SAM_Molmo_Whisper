@@ -15,9 +15,7 @@ def load_sam(model_name='facebook/sam2.1-hiera-large', device='cpu'):
     """
     Load SAM2 model.
     """
-    sam_predictor = SAM2ImagePredictor.from_pretrained(
-        model_name, device_map=device
-    )
+    sam_predictor = SAM2ImagePredictor.from_pretrained(model_name)
     return sam_predictor
 
 def load_molmo(model_name='allenai/MolmoE-1B-0924', device='cpu'):
