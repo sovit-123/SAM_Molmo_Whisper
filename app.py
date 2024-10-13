@@ -8,7 +8,7 @@ from PIL import Image
 from transformers import GenerationConfig
 from utils.sam_utils import show_masks
 from utils.load_models import (
-    processor, molmo_model, transcriber, sam_predictor
+    load_molmo, load_sam, load_whisper
 )
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -130,6 +130,17 @@ def process_image(image, prompt, audio):
     return fig, output, transcribed_text
 
 if __name__ == '__main__':
+    # Load models.
+    transcriber = load_whisper(
+        model_name='openai/whisper-small', device='cpu'
+    )
+    processor, molmo_model = load_molmo(
+        model_name='allenai/MolmoE-1B-0924', device=device
+    )
+    sam_predictor = load_sam(
+        model_name='facebook/sam2.1-hiera-large', device=device
+    )
+
     # Gradio interface.
     iface = gr.Interface(
         fn=process_image,
