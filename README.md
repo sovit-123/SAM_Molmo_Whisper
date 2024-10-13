@@ -9,7 +9,7 @@ Capabilities:
 **Run the Gradio demo using**:
 
 ```
-python sam2_molmo_gradio.py
+python app.py
 ```
 
 https://github.com/user-attachments/assets/66a0620e-ede3-4018-8ee7-f261790747cb
