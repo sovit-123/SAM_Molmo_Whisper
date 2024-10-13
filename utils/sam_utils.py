@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Helper functions for SAM2 segmentation map visualization.
-def show_mask(mask, ax, random_color=False, borders = True):
+def show_mask(mask, plt, random_color=False, borders = True):
     if random_color:
         color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)
     else:
@@ -34,7 +34,7 @@ def show_mask(mask, ax, random_color=False, borders = True):
             (1, 0, 0, 1), 
             thickness=2
         ) 
-    ax.imshow(mask_image)
+    plt.imshow(mask_image)
 
 def show_points(coords, labels, ax, marker_size=375):
     pos_points = coords[labels==1]
@@ -79,8 +79,12 @@ def show_masks(
     input_labels=None, 
     borders=True
 ):
-    plt.figure(figsize=(10, 10))
+    dpi = plt.rcParams['figure.dpi']
+    figsize = image.shape[1] / dpi, image.shape[0] / dpi
+
+    plt.figure(figsize=figsize)
     plt.imshow(image)
+
     for i, (mask, score) in enumerate(zip(masks, scores)):
         if i == 0:  # Only show the highest scoring mask.
             show_mask(mask, plt.gca(), random_color=False, borders=borders)
@@ -88,6 +92,9 @@ def show_masks(
         assert input_labels is not None
         show_points(point_coords, input_labels, plt.gca())
     if box_coords is not None:
-        show_box(box_coords, plt.gca())
+        show_box(box_coords, plt)
+
+    plt.tight_layout()
+    plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
     plt.axis('off')
     return plt
