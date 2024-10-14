@@ -16,7 +16,7 @@ https://github.com/user-attachments/assets/66a0620e-ede3-4018-8ee7-f261790747cb
 
 ## Installing Requirements
 
-Install Pytorch, Hugging Face Transformers, and rest of the base requirements.
+Install Pytorch, Hugging Face Transformers, and the rest of the base requirements.
 
 ```
 pip install -r requirements.txt
@@ -24,7 +24,7 @@ pip install -r requirements.txt
 
 **Install SAM2:**
 
-*It is highly recommended to clone SAM2 a separate directory other than this project directory and run the installation commands*.
+*It is highly recommended to clone SAM2 to a separate directory other than this project directory and run the installation commands*.
 
 ```
 git clone https://github.com/facebookresearch/sam2.git && cd sam2
