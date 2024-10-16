@@ -6,11 +6,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Helper functions for SAM2 segmentation map visualization.
-def show_mask(mask, plt, random_color=False, borders = True):
+def show_mask(mask, plt, random_color=False, borders=True):
     if random_color:
         color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)
     else:
         color = np.array([255/255, 40/255, 50/255, 0.6])
+
     h, w = mask.shape[-2:]
     mask = mask.astype(np.uint8)
     mask_image =  mask.reshape(h, w, 1) * color.reshape(1, 1, -1)
@@ -18,7 +19,7 @@ def show_mask(mask, plt, random_color=False, borders = True):
     if borders:
         import cv2
         contours, _ = cv2.findContours(
-            mask,cv2.RETR_EXTERNAL, 
+            mask, cv2.RETR_EXTERNAL, 
             cv2.CHAIN_APPROX_NONE
         )
         # Try to smooth contours
@@ -31,7 +32,7 @@ def show_mask(mask, plt, random_color=False, borders = True):
             mask_image, 
             contours, 
             -1, 
-            (1, 0, 0, 1), 
+            (color[0], color[1], color[1], 1), 
             thickness=2
         ) 
     plt.imshow(mask_image)
