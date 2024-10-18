@@ -7,3 +7,6 @@ gradio==5.0.2
 pydantic==2.9.1
 pydantic-core==2.23.3
 fastapi==0.112.2
+matplotlib==3.9.2
+einops==0.8.0
+opencv-python==4.10.0.84
