@@ -1,11 +1,11 @@
 import numpy as np
 import gradio as gr
 import torch
+import matplotlib.pyplot as plt
 
 from PIL import Image
-
 from utils.sam_utils import show_masks
-from utils.general import get_coords
+from utils.general import get_coords, plot_image
 from utils.model_utils import (
     get_whisper_output, get_molmo_output, get_sam_output
 )
@@ -85,7 +85,11 @@ def process_image(
         molmo_model,
         prompt
     )
+
     coords = get_coords(output, image)
+
+    if type(coords) == str: # If we get image caption instead of points.
+        return  plot_image(image), output, transcribed_text
     
     # Prepare input for SAM
     input_points = np.array(coords)
