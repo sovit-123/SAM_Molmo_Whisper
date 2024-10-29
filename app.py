@@ -167,6 +167,16 @@ def process_video(
         processor, molmo_model = load_molmo(model_name=molmo_tag, device=device)
         molmo_model_name = molmo_tag
 
+    if whisper_tag != whisper_model_name:
+        gr.Info(message=f"Loading {whisper_tag}", duration=20)
+        transcriber = load_whisper(model_name=whisper_tag, device='cpu')
+        whisper_model_name = whisper_tag
+
+    transcribed_text = ''
+
+    if len(prompt) == 0:
+        transcribed_text, prompt = get_whisper_output(audio, transcriber)
+
     # Get the first frame from the extracted videos.
     image = Image.open('temp/00000.jpg')
 
@@ -194,16 +204,6 @@ def process_video(
     except:
         with torch.inference_mode(), torch.autocast(device_type=sam_device_string, dtype=torch.bfloat16):
             inference_state = sam_predictor.init_state(video_path=temp_dir)
-
-    if whisper_tag != whisper_model_name:
-        gr.Info(message=f"Loading {whisper_tag}", duration=20)
-        transcriber = load_whisper(model_name=whisper_tag, device='cpu')
-        whisper_model_name = whisper_tag
-
-    transcribed_text = ''
-
-    if len(prompt) == 0:
-        transcribed_text, prompt = get_whisper_output(audio, transcriber)
 
     print(prompt)
 
@@ -257,7 +257,7 @@ def process_video(
     w, h = image.size
     save_video(output_dir, w, h, temp_dir, frame_names, video_segments)
     
-    return os.path.join(output_dir, 'molmo_points_output.avi'), output, transcribed_text
+    return os.path.join(output_dir, 'molmo_points_output.webm'), output, transcribed_text
 
 image_interface = gr.Interface(
     fn=process_image,
@@ -315,7 +315,7 @@ video_interface = gr.Interface(
         gr.Audio(sources=['microphone'])
     ],
     outputs=[
-        gr.Video(label='Segmentation Result', format='avi'),
+        gr.Video(label='Segmentation Result', format='webm'),
         gr.Textbox(label='Molmo Output'),
         gr.Textbox(label='Whisper Output'),
     ],

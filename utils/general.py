@@ -84,10 +84,10 @@ def save_video(output_dir, w, h, video_frames_dir, frame_names, video_segments):
     Function to save video results from SAM video predictor.
     """
     # OpenCV VideoWriter
-    codec = cv2.VideoWriter_fourcc('X', 'V', 'I', 'D')
+    codec = cv2.VideoWriter_fourcc(*'VP90')
     # codec = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(
-        f"{output_dir}/molmo_points_output.avi",
+        f"{output_dir}/molmo_points_output.webm",
         codec, 30,
         (w, h)
     )
