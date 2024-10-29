@@ -4,3 +4,5 @@ flagged/
 .gradio
 experiments/video_frames
 experiments/video_out
+temp/
+outputs/
