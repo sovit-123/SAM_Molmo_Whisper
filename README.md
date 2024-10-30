@@ -2,6 +2,8 @@
 
 ***Note: The project is in very initial stages and will change drastically in the near future. Things may break.***
 
+**[Go to Setup](#Setup)**
+
 A simple integration of Segment Anything Model, Molmo, and, Whisper to segment objects using voice and natural language.
 
 Capabilities:
@@ -16,6 +18,12 @@ python app.py
 ```
 
 https://github.com/user-attachments/assets/66a0620e-ede3-4018-8ee7-f261790747cb
+
+## What's New
+
+### October 30, 2024
+
+* Added tabbed interface for video segmentation. Process remains the same. Either prompt via text or voice, upload a video and get the segmentation maps of the objects.
 
 ## Setup
 

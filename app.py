@@ -162,10 +162,11 @@ def process_video(
     extract_video_frame(video=video, path=temp_dir)
 
     # Check if user chose different model, and load appropriately.
-    if molmo_tag != molmo_model_name:
-        gr.Info(message=f"Loading {molmo_tag}", duration=20)
-        processor, molmo_model = load_molmo(model_name=molmo_tag, device=device)
-        molmo_model_name = molmo_tag
+    # Fow now, load the Molmo model every time as we are deleting it later on.
+    # if molmo_tag != molmo_model_name:
+    gr.Info(message=f"Loading {molmo_tag}", duration=20)
+    processor, molmo_model = load_molmo(model_name=molmo_tag, device=device)
+    molmo_model_name = molmo_tag
 
     if whisper_tag != whisper_model_name:
         gr.Info(message=f"Loading {whisper_tag}", duration=20)
