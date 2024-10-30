@@ -99,3 +99,15 @@ def show_masks(
     plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
     plt.axis('off')
     return plt
+
+def show_video_mask(mask, ax, obj_id=None, random_color=False):
+    if random_color:
+        color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)
+    else:
+        cmap = plt.get_cmap('tab10')
+        cmap_idx = 0 if obj_id is None else obj_id
+        color = np.array([*cmap(cmap_idx)[:3], 0.6])
+    h, w = mask.shape[-2:]
+    mask_image = mask.reshape(h, w, 1) * color.reshape(1, 1, -1)
+    ax.imshow(mask_image)
+    ax.axis('off')

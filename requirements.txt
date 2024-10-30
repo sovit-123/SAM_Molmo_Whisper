@@ -10,3 +10,4 @@ fastapi==0.112.2
 matplotlib==3.9.2
 einops==0.8.0
 opencv-python==4.10.0.84
+numpy==1.26.4

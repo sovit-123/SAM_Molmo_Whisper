@@ -2,6 +2,7 @@
 Code for loading SAM, Molmo, and Whisper models.
 """
 from sam2.sam2_image_predictor import SAM2ImagePredictor
+from sam2.sam2_video_predictor import SAM2VideoPredictor
 from transformers import (
     AutoModelForCausalLM,
     AutoProcessor,
@@ -16,6 +17,12 @@ def load_sam(model_name='facebook/sam2.1-hiera-large', device='cpu'):
     Load SAM2 model.
     """
     sam_predictor = SAM2ImagePredictor.from_pretrained(model_name)
+    return sam_predictor
+
+def load_sam_video(model_name='facebook/sam2.1-hiera-tiny', device='cpu'):
+    sam_predictor = SAM2VideoPredictor.from_pretrained(
+        model_name
+    )
     return sam_predictor
 
 def load_molmo(model_name='allenai/MolmoE-1B-0924', device='cpu'):

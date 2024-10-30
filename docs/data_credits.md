@@ -15,4 +15,6 @@
     * https://www.pexels.com/photo/vibrant-birds-hovering-near-purple-flowers-28822457/
   * `image_8.jpg`: Photo by Filipe de Azevedo: https://www.pexels.com/photo/photo-of-people-walking-on-a-pedestrian-lane-4937603/
     * https://www.pexels.com/photo/photo-of-people-walking-on-a-pedestrian-lane-4937603/
-  * 
+  * `video_1.mp4`: Video by Tima Miroshnichenko: https://www.pexels.com/video/people-playing-soccer-6077718/
+    * https://www.pexels.com/video/people-playing-soccer-6077718/
+
