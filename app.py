@@ -1,7 +1,6 @@
 import numpy as np
 import gradio as gr
 import torch
-import matplotlib.pyplot as plt
 import os
 import shutil
 import gc
