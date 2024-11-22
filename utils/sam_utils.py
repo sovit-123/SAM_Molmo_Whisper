@@ -37,7 +37,31 @@ def show_mask(mask, plt, random_color=False, borders=True):
         ) 
     plt.imshow(mask_image)
 
-def show_points(coords, labels, ax, marker_size=375):
+def add_labels(ax, clip_label, labels, pos_points, neg_points):
+    # Add custom text labels for points
+    pos_labels = [clip_label[i] for i in range(len(labels)) if labels[i] == 1]
+    neg_labels = [clip_label[i] for i in range(len(labels)) if labels[i] == 0]
+    
+    # Add labels for positive points
+    for (x, y), label in zip(pos_points, pos_labels):
+        ax.text(
+            x, y, label, 
+            color='green', fontsize=12, ha='center', va='center', 
+            bbox=dict(facecolor='white', edgecolor='green', alpha=0.6, boxstyle='round,pad=0.3')
+        )
+    
+    # Add labels for negative points
+    for (x, y), label in zip(neg_points, neg_labels):
+        ax.text(
+            x, y, label, 
+            color='red', fontsize=8, ha='center', va='center', 
+            bbox=dict(facecolor='white', edgecolor='red', alpha=0.6, boxstyle='round,pad=0.3')
+        )
+    
+    ax.legend()  # Add legend to differentiate between positive and negative points
+    return ax
+
+def show_points(coords, labels, ax, clip_label, marker_size=375):
     pos_points = coords[labels==1]
     neg_points = coords[labels==0]
     ax.scatter(
@@ -59,6 +83,15 @@ def show_points(coords, labels, ax, marker_size=375):
         linewidth=1.25
     )   
 
+    if clip_label is not None:
+        ax = add_labels(
+            ax, 
+            clip_label=clip_label, 
+            labels=labels, 
+            pos_points=pos_points, 
+            neg_points=neg_points
+        )
+
 def show_box(box, ax):
     x0, y0 = box[0], box[1]
     w, h = box[2] - box[0], box[3] - box[1]
@@ -78,7 +111,8 @@ def show_masks(
     point_coords=None, 
     box_coords=None, 
     input_labels=None, 
-    borders=True
+    borders=True,
+    clip_label=None
 ):
     dpi = plt.rcParams['figure.dpi']
     figsize = image.shape[1] / dpi, image.shape[0] / dpi
@@ -91,7 +125,12 @@ def show_masks(
             show_mask(mask, plt.gca(), random_color=False, borders=borders)
     if point_coords is not None:
         assert input_labels is not None
-        show_points(point_coords, input_labels, plt.gca())
+        show_points(
+            coords=point_coords, 
+            labels=input_labels, 
+            ax=plt.gca(), 
+            clip_label=clip_label
+        )
     if box_coords is not None:
         show_box(box_coords, plt)
 

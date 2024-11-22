@@ -11,13 +11,13 @@ from utils.general import (
     get_coords, 
     plot_image, 
     extract_video_frame,
-    save_video
+    save_video,
 )
 from utils.model_utils import (
-    get_whisper_output, get_molmo_output, get_sam_output
+    get_whisper_output, get_molmo_output, get_sam_output, get_spacy_output
 )
 from utils.load_models import (
-    load_molmo, load_sam, load_whisper, load_sam_video
+    load_molmo, load_sam, load_whisper, load_sam_video, load_clip, load_spacy
 )
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -35,7 +35,8 @@ def process_image(
     audio,
     whisper_tag,
     molmo_tag,
-    sam_tag
+    sam_tag,
+    clip_label
 ):
     """
     Function combining all the components and returning the final 
@@ -47,6 +48,7 @@ def process_image(
     :param molmo_tag: Molmo Hugging Face model tag.
     :param sam_tag: SAM Hugging Face model tag.
     :param Whisper_tag: Whisper Hugging Face model tag.
+    :param clip_label: Whether to enable auto labeling using CLIP.
 
     Returns:
         fig: Final segmentation map.
@@ -98,6 +100,14 @@ def process_image(
     if type(coords) == str: # If we get image caption instead of points.
         return  plot_image(image), output, transcribed_text
     
+    # Load CLIP and Spacy models if `clip_label` is True.
+    if clip_label:
+        spacy_nlp = load_spacy()
+        clip_processor, clip_model = load_clip()
+
+        # Get the nouns list.
+        nouns = get_spacy_output(outputs=output, model=spacy_nlp)
+    
     # Prepare input for SAM
     input_points = np.array(coords)
     input_labels = np.ones(len(input_points), dtype=np.int32)
@@ -105,23 +115,81 @@ def process_image(
     # Convert image to numpy array if it's not already.
     if isinstance(image, Image.Image):
         image = np.array(image)
+
     
-    # Get SAM output
-    masks, scores, logits, sorted_ind = get_sam_output(
-        image, sam_predictor, input_points, input_labels
-    )
+    if clip_label:
+        label_array = [] # To store CLIP label after each loop.
+        final_mask = np.zeros_like(image.transpose(2, 0, 1), dtype=np.float32)
+
+        # This probably takes as many times longer as the number of objects
+        # detected by Molmo.
+        for input_point, input_label in zip(input_points, input_labels):
+            masks, scores, logits, sorted_ind = get_sam_output(
+                image,
+                sam_predictor,
+                input_points=[input_point],
+                input_labels=[input_label]
+            )
+            sorted_ind = np.argsort(scores)[::-1]
+            masks = masks[sorted_ind]
+            scores = scores[sorted_ind]
+            logits = logits[sorted_ind]
+
+            final_mask += masks
+        
+            masks_copy = masks.copy()
+            masks_copy = masks_copy.transpose(1, 2, 0)
+
+            masked_image = (image * np.expand_dims(masks_copy[:, :, 0], axis=-1))
+            masked_image = masked_image.astype(np.uint8)
+
+            # Process masked image and give input to CLIP.
+            clip_inputs = clip_processor(
+                text=nouns, 
+                images=Image.fromarray(masked_image), 
+                return_tensors='pt', 
+                padding=True
+            )
+            clip_outputs = clip_model(**clip_inputs)
+            clip_logits_per_image = clip_outputs.logits_per_image # this is the image-text similarity score
+            clip_probs = clip_logits_per_image.softmax(dim=1) # we can take the softmax to get the label probabilities
+            clip_label = nouns[np.argmax(clip_probs.detach().cpu())]
+
+            label_array.append(clip_label)
+
+        im = final_mask >= 1
+        final_mask[im] = 1
+        final_mask[np.logical_not(im)] = 0
+        
+        fig = show_masks(
+            image, 
+            final_mask, 
+            scores, 
+            point_coords=input_points, 
+            input_labels=input_labels, 
+            borders=True,
+            clip_label=label_array
+        )
+
+        return fig, output, transcribed_text
     
-    # Visualize results.
-    fig = show_masks(
-        image, 
-        masks, 
-        scores, 
-        point_coords=input_points, 
-        input_labels=input_labels, 
-        borders=True
-    )
-    
-    return fig, output, transcribed_text
+    else:
+        # Get SAM output
+        masks, scores, logits, sorted_ind = get_sam_output(
+            image, sam_predictor, input_points, input_labels
+        )
+        
+        # Visualize results.
+        fig = show_masks(
+            image, 
+            masks, 
+            scores, 
+            point_coords=input_points, 
+            input_labels=input_labels, 
+            borders=True
+        )
+        
+        return fig, output, transcribed_text
 
 def process_video(
     video, 
@@ -301,6 +369,7 @@ image_interface = gr.Interface(
             ),
             value='facebook/sam2.1-hiera-large'
         ),
+        gr.Checkbox(value=False, label='Enable CLIP Auto Labelling')
     ],
     title='Image Segmentation with SAM2, Molmo, and Whisper',
     description=f"Upload an image and provide a prompt to segment specific objects in the image. \
