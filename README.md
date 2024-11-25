@@ -55,6 +55,14 @@ git clone https://github.com/facebookresearch/sam2.git && cd sam2
 pip install -e .
 ```
 
+## To Use CLIP Auto Labelling
+
+After installing the requirements install SpaCy's  `en_core_web_sm` model.
+
+```
+spacy download en_core_web_sm
+```
+
 ### Run the App
 
 ```
