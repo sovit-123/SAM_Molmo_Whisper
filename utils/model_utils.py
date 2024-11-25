@@ -5,6 +5,7 @@ Model forward passes and other model processing utilities.
 from transformers import GenerationConfig
 
 import torch
+import re
 import numpy as np
 
 def get_molmo_output(image, processor, model, prompt='Describe this image.'):
@@ -22,7 +23,7 @@ def get_molmo_output(image, processor, model, prompt='Describe this image.'):
     
     output = model.generate_from_batch(
         inputs,
-        GenerationConfig(max_new_tokens=200, stop_strings='<|endoftext|>'),
+        GenerationConfig(max_new_tokens=1024, stop_strings='<|endoftext|>'),
         tokenizer=processor.tokenizer
     )
     
@@ -84,3 +85,25 @@ def get_whisper_output(audio, model):
     prompt = transcribed_text
 
     return transcribed_text, prompt
+
+
+def get_spacy_output(outputs, model):
+    """
+    Get the nouns from the alt tags produced by Molmo:
+
+    :param outputs: Output string from Molmo.
+    :param model: The Spacy model.
+
+    Returns:
+        nouns: A list containing the nouns, e.g. ['bird', 'person']
+    """
+    print(outputs)
+    if 'alt=\"' in outputs:
+        match = re.search(r'alt="([^"]*)"', outputs)
+        if match:
+            alt_tag = match.group(1)
+
+        doc = model(alt_tag)
+        nouns = [token.text for token in doc if token.pos_ == 'NOUN']
+
+    return nouns

@@ -7,8 +7,12 @@ from transformers import (
     AutoModelForCausalLM,
     AutoProcessor,
     BitsAndBytesConfig,
-    pipeline
+    pipeline,
+    CLIPProcessor,
+    CLIPModel
 )
+
+import spacy
 
 quant_config = BitsAndBytesConfig(load_in_4bit=True)
 
@@ -55,3 +59,23 @@ def load_whisper(model_name='openai/whisper-small', device='cpu'):
         device=device
     )
     return transcriber
+
+def load_clip():
+    """
+    Loads the CLIP model for auto classification.
+    """
+    clip_model = CLIPModel.from_pretrained(
+        'openai/clip-vit-base-patch32', device_map='cpu'
+    )
+    clip_processor = CLIPProcessor.from_pretrained(
+        'openai/clip-vit-base-patch32'
+    )
+    return clip_processor, clip_model
+
+def load_spacy():
+    """
+    Loads the Spacy `en_core_web_sm` model for extracting nouns from 
+    Molmo alt strings.
+    """
+    spacy_nlp = spacy.load('en_core_web_sm')
+    return spacy_nlp
