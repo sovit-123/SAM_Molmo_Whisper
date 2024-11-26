@@ -37,7 +37,8 @@ def process_image(
     molmo_tag,
     sam_tag,
     clip_label,
-    draw_bbox
+    draw_bbox,
+    sequential_processing
 ):
     """
     Function combining all the components and returning the final 
@@ -170,6 +171,47 @@ def process_image(
             input_labels=input_labels, 
             borders=True,
             clip_label=label_array,
+            draw_bbox=draw_bbox
+        )
+
+        return fig, output, transcribed_text
+    
+    if sequential_processing:
+        final_mask = np.zeros_like(image.transpose(2, 0, 1), dtype=np.float32)
+
+        # This probably takes as many times longer as the number of objects
+        # detected by Molmo.
+        for input_point, input_label in zip(input_points, input_labels):
+            masks, scores, logits, sorted_ind = get_sam_output(
+                image,
+                sam_predictor,
+                input_points=[input_point],
+                input_labels=[input_label]
+            )
+            sorted_ind = np.argsort(scores)[::-1]
+            masks = masks[sorted_ind]
+            scores = scores[sorted_ind]
+            logits = logits[sorted_ind]
+
+            final_mask += masks
+        
+            masks_copy = masks.copy()
+            masks_copy = masks_copy.transpose(1, 2, 0)
+
+            masked_image = (image * np.expand_dims(masks_copy[:, :, 0], axis=-1))
+            masked_image = masked_image.astype(np.uint8)
+
+        im = final_mask >= 1
+        final_mask[im] = 1
+        final_mask[np.logical_not(im)] = 0
+        
+        fig = show_masks(
+            image, 
+            final_mask, 
+            scores, 
+            point_coords=input_points, 
+            input_labels=input_labels, 
+            borders=True,
             draw_bbox=draw_bbox
         )
 
@@ -374,14 +416,20 @@ image_interface = gr.Interface(
         ),
         gr.Checkbox(
             value=False, 
-            label='Enable CLIP Auto Labelling',
+            label='Enable CLIP Auto Labelling.',
             info='Slower but gives better segmentations maps along with labels'
         ),
         gr.Checkbox(
             value=False, 
             label='Draw Bounding Boxes',
             info='Whether to draw bounding boxes around the segmentation objects. \
-                  Works best with CLIP Auto Labelling'
+                  Works best with CLIP Auto Labelling.'
+        ),
+        gr.Checkbox(
+            value=False, 
+            label='Sequential Processing',
+            info='Process Molmo points sequentially generating one mask at a time. \
+                  Slower but more accurate masks.'
         )
     ],
     title='Image Segmentation with SAM2, Molmo, and Whisper',
