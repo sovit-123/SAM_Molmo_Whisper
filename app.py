@@ -36,7 +36,8 @@ def process_image(
     whisper_tag,
     molmo_tag,
     sam_tag,
-    clip_label
+    clip_label,
+    draw_bbox
 ):
     """
     Function combining all the components and returning the final 
@@ -168,7 +169,8 @@ def process_image(
             point_coords=input_points, 
             input_labels=input_labels, 
             borders=True,
-            clip_label=label_array
+            clip_label=label_array,
+            draw_bbox=draw_bbox
         )
 
         return fig, output, transcribed_text
@@ -186,7 +188,8 @@ def process_image(
             scores, 
             point_coords=input_points, 
             input_labels=input_labels, 
-            borders=True
+            borders=True,
+            draw_bbox=draw_bbox
         )
         
         return fig, output, transcribed_text
@@ -369,7 +372,17 @@ image_interface = gr.Interface(
             ),
             value='facebook/sam2.1-hiera-large'
         ),
-        gr.Checkbox(value=False, label='Enable CLIP Auto Labelling')
+        gr.Checkbox(
+            value=False, 
+            label='Enable CLIP Auto Labelling',
+            info='Slower but gives better segmentations maps along with labels'
+        ),
+        gr.Checkbox(
+            value=False, 
+            label='Draw Bounding Boxes',
+            info='Whether to draw bounding boxes around the segmentation objects. \
+                  Works best with CLIP Auto Labelling'
+        )
     ],
     title='Image Segmentation with SAM2, Molmo, and Whisper',
     description=f"Upload an image and provide a prompt to segment specific objects in the image. \
