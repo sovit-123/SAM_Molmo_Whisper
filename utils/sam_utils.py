@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Helper functions for SAM2 segmentation map visualization.
-def show_mask(mask, plt, random_color=False, borders=True):
+def show_mask(mask, plt, random_color=False, borders=True, bboxes=False):
     if random_color:
         color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)
     else:
@@ -18,23 +18,35 @@ def show_mask(mask, plt, random_color=False, borders=True):
     
     if borders:
         import cv2
-        contours, _ = cv2.findContours(
+        contours_orig, _ = cv2.findContours(
             mask, cv2.RETR_EXTERNAL, 
             cv2.CHAIN_APPROX_NONE
         )
         # Try to smooth contours
-        contours = [
+        contours_smoothed = [
             cv2.approxPolyDP(
                 contour, epsilon=0.01, closed=True
-            ) for contour in contours
+            ) for contour in contours_orig
         ]
         mask_image = cv2.drawContours(
             mask_image, 
-            contours, 
+            contours_smoothed, 
             -1, 
             (color[0], color[1], color[1], 1), 
             thickness=2
-        ) 
+        )
+
+        if bboxes: # Draw bounding boxes from contours if chosen from UI.
+            for contour in contours_orig:
+                bounding_boxes = cv2.boundingRect(contour)
+                cv2.rectangle(
+                    mask_image,
+                    pt1=(int(bounding_boxes[0]), int(bounding_boxes[1])),
+                    pt2=(int(bounding_boxes[0]+bounding_boxes[2]), int(bounding_boxes[1]+bounding_boxes[3])),
+                    color=(color[0], color[1], color[1], 1),
+                    thickness=2
+                )
+
     plt.imshow(mask_image)
 
 def add_labels(ax, clip_label, labels, pos_points, neg_points):
@@ -112,7 +124,8 @@ def show_masks(
     box_coords=None, 
     input_labels=None, 
     borders=True,
-    clip_label=None
+    clip_label=None,
+    draw_bbox=False
 ):
     dpi = plt.rcParams['figure.dpi']
     figsize = image.shape[1] / dpi, image.shape[0] / dpi
@@ -122,7 +135,13 @@ def show_masks(
 
     for i, (mask, score) in enumerate(zip(masks, scores)):
         if i == 0:  # Only show the highest scoring mask.
-            show_mask(mask, plt.gca(), random_color=False, borders=borders)
+            show_mask(
+                mask, 
+                plt.gca(), 
+                random_color=False, 
+                borders=borders, 
+                bboxes=draw_bbox
+            )
     if point_coords is not None:
         assert input_labels is not None
         show_points(
