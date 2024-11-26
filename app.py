@@ -38,7 +38,8 @@ def process_image(
     sam_tag,
     clip_label,
     draw_bbox,
-    sequential_processing
+    sequential_processing,
+    random_color
 ):
     """
     Function combining all the components and returning the final 
@@ -119,7 +120,7 @@ def process_image(
         image = np.array(image)
 
     
-    if clip_label:
+    if clip_label: # If CLIP auto-labelling is enabled.
         label_array = [] # To store CLIP label after each loop.
         final_mask = np.zeros_like(image.transpose(2, 0, 1), dtype=np.float32)
 
@@ -171,12 +172,13 @@ def process_image(
             input_labels=input_labels, 
             borders=True,
             clip_label=label_array,
-            draw_bbox=draw_bbox
+            draw_bbox=draw_bbox,
+            random_color=random_color
         )
 
         return fig, output, transcribed_text
     
-    if sequential_processing:
+    if sequential_processing: # If sequential processing of points is enabled without CLIP.
         final_mask = np.zeros_like(image.transpose(2, 0, 1), dtype=np.float32)
 
         # This probably takes as many times longer as the number of objects
@@ -212,7 +214,8 @@ def process_image(
             point_coords=input_points, 
             input_labels=input_labels, 
             borders=True,
-            draw_bbox=draw_bbox
+            draw_bbox=draw_bbox,
+            random_color=random_color
         )
 
         return fig, output, transcribed_text
@@ -430,6 +433,11 @@ image_interface = gr.Interface(
             label='Sequential Processing',
             info='Process Molmo points sequentially generating one mask at a time. \
                   Slower but more accurate masks.'
+        ),
+        gr.Checkbox(
+            value=False,
+            label='Random color Mask',
+            info='Randomly choose a mask color.'
         )
     ],
     title='Image Segmentation with SAM2, Molmo, and Whisper',

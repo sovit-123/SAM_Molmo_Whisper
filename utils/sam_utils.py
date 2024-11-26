@@ -6,9 +6,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Helper functions for SAM2 segmentation map visualization.
-def show_mask(mask, plt, random_color=False, borders=True, bboxes=False):
+def show_mask(
+    mask, 
+    plt, 
+    random_color=False, 
+    borders=True, 
+    bboxes=False
+):
     if random_color:
-        color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)
+        # color = np.array([np.random.random(3), np.array([0.6])], axis=0)
+        color = np.random.uniform(low=0, high=255, size=(3,))/255
+        color = np.append(color, 0.6)
     else:
         color = np.array([255/255, 40/255, 50/255, 0.6])
 
@@ -32,7 +40,7 @@ def show_mask(mask, plt, random_color=False, borders=True, bboxes=False):
             mask_image, 
             contours_smoothed, 
             -1, 
-            (color[0], color[1], color[1], 1), 
+            (color[0], color[1], color[2], 1), 
             thickness=2
         )
 
@@ -43,7 +51,7 @@ def show_mask(mask, plt, random_color=False, borders=True, bboxes=False):
                     mask_image,
                     pt1=(int(bounding_boxes[0]), int(bounding_boxes[1])),
                     pt2=(int(bounding_boxes[0]+bounding_boxes[2]), int(bounding_boxes[1]+bounding_boxes[3])),
-                    color=(color[0], color[1], color[1], 1),
+                    color=(color[0], color[1], color[2], 1),
                     thickness=2
                 )
 
@@ -125,7 +133,8 @@ def show_masks(
     input_labels=None, 
     borders=True,
     clip_label=None,
-    draw_bbox=False
+    draw_bbox=False,
+    random_color=False
 ):
     dpi = plt.rcParams['figure.dpi']
     figsize = image.shape[1] / dpi, image.shape[0] / dpi
@@ -138,7 +147,7 @@ def show_masks(
             show_mask(
                 mask, 
                 plt.gca(), 
-                random_color=False, 
+                random_color=random_color, 
                 borders=borders, 
                 bboxes=draw_bbox
             )
