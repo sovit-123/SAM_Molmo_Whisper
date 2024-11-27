@@ -411,6 +411,9 @@ image_interface = gr.Interface(
             label='Molmo Models',
             choices=(
                 'allenai/MolmoE-1B-0924',
+                'allenai/Molmo-7B-O-0924',
+                'allenai/Molmo-7B-D-0924',
+                'allenai/Molmo-72B-0924',
             ),
             value='allenai/MolmoE-1B-0924'
         ),
@@ -488,6 +491,9 @@ video_interface = gr.Interface(
             label='Molmo Models',
             choices=(
                 'allenai/MolmoE-1B-0924',
+                'allenai/Molmo-7B-O-0924',
+                'allenai/Molmo-7B-D-0924',
+                'allenai/Molmo-72B-0924',
             ),
             value='allenai/MolmoE-1B-0924'
         ),
