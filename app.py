@@ -39,7 +39,8 @@ def process_image(
     clip_label,
     draw_bbox,
     sequential_processing,
-    random_color
+    random_color,
+    chat_only
 ):
     """
     Function combining all the components and returning the final 
@@ -73,10 +74,11 @@ def process_image(
         processor, molmo_model = load_molmo(model_name=molmo_tag, device=device)
         molmo_model_name = molmo_tag
 
-    if sam_tag != sam_model_name:
-        gr.Info(message=f"Loading {sam_tag}", duration=20)
-        sam_predictor = load_sam(model_name=sam_tag)
-        sam_model_name = sam_tag
+    if not chat_only: # Load SAM only if `chat_only` mode is not selected.
+        if sam_tag != sam_model_name:
+            gr.Info(message=f"Loading {sam_tag}", duration=20)
+            sam_predictor = load_sam(model_name=sam_tag)
+            sam_model_name = sam_tag
 
     if whisper_tag != whisper_model_name:
         gr.Info(message=f"Loading {whisper_tag}", duration=20)
@@ -119,8 +121,10 @@ def process_image(
     if isinstance(image, Image.Image):
         image = np.array(image)
 
+    if chat_only:
+        gr.Warning('Chat Only mode chosen. Ignoring every other option.')
     
-    if clip_label: # If CLIP auto-labelling is enabled.
+    if not chat_only and clip_label: # If CLIP auto-labelling is enabled.
         label_array = [] # To store CLIP label after each loop.
         final_mask = np.zeros_like(image.transpose(2, 0, 1), dtype=np.float32)
 
@@ -178,7 +182,7 @@ def process_image(
 
         return fig, output, transcribed_text
     
-    if sequential_processing: # If sequential processing of points is enabled without CLIP.
+    if not chat_only and  sequential_processing: # If sequential processing of points is enabled without CLIP.
         final_mask = np.zeros_like(image.transpose(2, 0, 1), dtype=np.float32)
 
         # This probably takes as many times longer as the number of objects
@@ -221,10 +225,11 @@ def process_image(
         return fig, output, transcribed_text
     
     else:
-        # Get SAM output
-        masks, scores, logits, sorted_ind = get_sam_output(
-            image, sam_predictor, input_points, input_labels
-        )
+        masks, scores, logits, sorted_ind = None, None, None, None
+        if not chat_only: # Get SAM output
+            masks, scores, logits, sorted_ind = get_sam_output(
+                image, sam_predictor, input_points, input_labels
+            )
         
         # Visualize results.
         fig = show_masks(
@@ -234,7 +239,8 @@ def process_image(
             point_coords=input_points, 
             input_labels=input_labels, 
             borders=True,
-            draw_bbox=draw_bbox
+            draw_bbox=draw_bbox,
+            chat_only=chat_only
         )
         
         return fig, output, transcribed_text
@@ -438,6 +444,13 @@ image_interface = gr.Interface(
             value=False,
             label='Random color Mask',
             info='Randomly choose a mask color.'
+        ),
+        gr.Checkbox(
+            value=False,
+            label='Chat Only Mode',
+            info='If wanting pointing and chatting only without SAM \
+                  segmentation (saves inference time and memory). All other \
+                  above checkboxes will be ignored.'
         )
     ],
     title='Image Segmentation with SAM2, Molmo, and Whisper',
