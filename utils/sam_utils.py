@@ -134,7 +134,8 @@ def show_masks(
     borders=True,
     clip_label=None,
     draw_bbox=False,
-    random_color=False
+    random_color=False,
+    chat_only=False
 ):
     dpi = plt.rcParams['figure.dpi']
     figsize = image.shape[1] / dpi, image.shape[0] / dpi
@@ -142,15 +143,17 @@ def show_masks(
     plt.figure(figsize=figsize)
     plt.imshow(image)
 
-    for i, (mask, score) in enumerate(zip(masks, scores)):
-        if i == 0:  # Only show the highest scoring mask.
-            show_mask(
-                mask, 
-                plt.gca(), 
-                random_color=random_color, 
-                borders=borders, 
-                bboxes=draw_bbox
-            )
+    if not chat_only:
+        for i, (mask, score) in enumerate(zip(masks, scores)):
+            if i == 0:  # Only show the highest scoring mask.
+                show_mask(
+                    mask, 
+                    plt.gca(), 
+                    random_color=random_color, 
+                    borders=borders, 
+                    bboxes=draw_bbox
+                )
+                
     if point_coords is not None:
         assert input_labels is not None
         show_points(
