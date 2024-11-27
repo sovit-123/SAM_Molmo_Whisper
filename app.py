@@ -80,10 +80,11 @@ def process_image(
             sam_predictor = load_sam(model_name=sam_tag)
             sam_model_name = sam_tag
 
-    if whisper_tag != whisper_model_name:
-        gr.Info(message=f"Loading {whisper_tag}", duration=20)
-        transcriber = load_whisper(model_name=whisper_tag, device='cpu')
-        whisper_model_name = whisper_tag
+    if audio is not None: # Load Whisper only if audio prompt is present.
+        if whisper_tag != whisper_model_name:
+            gr.Info(message=f"Loading {whisper_tag}", duration=20)
+            transcriber = load_whisper(model_name=whisper_tag, device='cpu')
+            whisper_model_name = whisper_tag
 
     transcribed_text = ''
 
