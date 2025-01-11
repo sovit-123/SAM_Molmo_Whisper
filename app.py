@@ -68,6 +68,8 @@ def process_image(
     global sam_predictor
     global transcriber
 
+    coords = []
+
     # Check if user chose different model, and load appropriately.
     if molmo_tag != molmo_model_name:
         gr.Info(message=f"Loading {molmo_tag}", duration=20)
@@ -382,136 +384,170 @@ def process_video(
     
     return os.path.join(output_dir, 'molmo_points_output.webm'), output, transcribed_text
 
-image_interface = gr.Interface(
-    fn=process_image,
-    inputs=[
-        gr.Image(type='pil', label='Upload Image'),
-        gr.Textbox(label='Prompt', placeholder='e.g., Point where the dog is.'),
-        gr.Audio(sources=['microphone'])
-    ],
-    outputs=[
-        gr.Plot(label='Segmentation Result', format='png'),
-        gr.Textbox(label='Molmo Output'),
-        gr.Textbox(label='Whisper Output'),
-    ],
-    additional_inputs=[
-        gr.Dropdown(
-            label='Whisper Models',
-            choices=(
-                'openai/whisper-tiny',
-                'openai/whisper-base',
-                'openai/whisper-small',
-                'openai/whisper-medium',
-                'openai/whisper-large-v3',
-                'openai/whisper-large-v3-turbo',
-            ),
-            value='openai/whisper-small'
+with gr.Blocks(
+    title='Image Segmentation with SAM2, Molmo, and Whisper'
+) as image_interface:
+    inputs = [
+            gr.Image(type='pil', label='Upload Image'),
+            gr.Textbox(label='Prompt', placeholder='e.g., Point where the dog is.'),
+            gr.Audio(sources=['microphone'])
+        ]
+    outputs = [
+            gr.Plot(label='Segmentation Result', format='png'),
+            gr.Textbox(label='Molmo Output'),
+            gr.Textbox(label='Whisper Output'),
+        ]
+    
+    # Additional inputs.
+    whisper_models = gr.Dropdown(
+        label='Whisper Models',
+        choices=(
+            'openai/whisper-tiny',
+            'openai/whisper-base',
+            'openai/whisper-small',
+            'openai/whisper-medium',
+            'openai/whisper-large-v3',
+            'openai/whisper-large-v3-turbo',
         ),
-        gr.Dropdown(
-            label='Molmo Models',
-            choices=(
-                'allenai/MolmoE-1B-0924',
-                'allenai/Molmo-7B-O-0924',
-                'allenai/Molmo-7B-D-0924',
-                'allenai/Molmo-72B-0924',
-            ),
-            value='allenai/MolmoE-1B-0924'
-        ),
-        gr.Dropdown(
-            label='SAM Models',
-            choices=(
-                'facebook/sam2.1-hiera-tiny',
-                'facebook/sam2.1-hiera-small',
-                'facebook/sam2.1-hiera-base-plus',
-                'facebook/sam2.1-hiera-large',
-            ),
-            value='facebook/sam2.1-hiera-large'
-        ),
-        gr.Checkbox(
-            value=False, 
-            label='Enable CLIP Auto Labelling.',
-            info='Slower but gives better segmentations maps along with labels'
-        ),
-        gr.Checkbox(
-            value=False, 
-            label='Draw Bounding Boxes',
-            info='Whether to draw bounding boxes around the segmentation objects. \
-                  Works best with CLIP Auto Labelling.'
-        ),
-        gr.Checkbox(
-            value=False, 
-            label='Sequential Processing',
-            info='Process Molmo points sequentially generating one mask at a time. \
-                  Slower but more accurate masks.'
-        ),
-        gr.Checkbox(
-            value=False,
-            label='Random color Mask',
-            info='Randomly choose a mask color.'
-        ),
-        gr.Checkbox(
-            value=False,
-            label='Chat Only Mode',
-            info='If wanting pointing and chatting only without SAM \
-                  segmentation (saves inference time and memory). All other \
-                  above checkboxes will be ignored.'
-        )
-    ],
-    title='Image Segmentation with SAM2, Molmo, and Whisper',
-    description=f"Upload an image and provide a prompt to segment specific objects in the image. \
-                Text box input takes precedence. Text box needs to be empty to prompt via voice."
-)
+        value='openai/whisper-small'
+    )
 
-video_interface = gr.Interface(
-    fn=process_video,
-    inputs=[
+    molmo_models = gr.Dropdown(
+        label='Molmo Models',
+        choices=(
+            'allenai/MolmoE-1B-0924',
+            'allenai/Molmo-7B-O-0924',
+            'allenai/Molmo-7B-D-0924',
+            'allenai/Molmo-72B-0924',
+        ),
+        value='allenai/MolmoE-1B-0924'
+    )
+
+    sam_models = gr.Dropdown(
+        label='SAM Models',
+        choices=(
+            'facebook/sam2.1-hiera-tiny',
+            'facebook/sam2.1-hiera-small',
+            'facebook/sam2.1-hiera-base-plus',
+            'facebook/sam2.1-hiera-large',
+        ),
+        value='facebook/sam2.1-hiera-large'
+    )
+
+    clip_checkbox = gr.Checkbox(
+        value=False, 
+        label='Enable CLIP Auto Labelling.',
+        info='Slower but gives better segmentations maps along with labels'
+    )
+
+    bbox_checkbox = gr.Checkbox(
+        value=False, 
+        label='Draw Bounding Boxes',
+        info='Whether to draw bounding boxes around the segmentation objects. \
+            Works best with CLIP Auto Labelling.'
+    )
+
+    seq_proc_checkbox = gr.Checkbox(
+        value=False, 
+        label='Sequential Processing',
+        info='Process Molmo points sequentially generating one mask at a time. \
+            Slower but more accurate masks.'
+    )
+
+    rnd_col_mask_checkbox = gr.Checkbox(
+        value=False,
+        label='Random color Mask',
+        info='Randomly choose a mask color.'
+    )
+
+    chat_only_checkbox = gr.Checkbox(
+        value=False,
+        label='Chat Only Mode',
+        info='If wanting pointing and chatting only without SAM \
+            segmentation (saves inference time and memory). All other \
+            above checkboxes will be ignored.'
+    )
+
+    gr.Interface(
+        fn=process_image,
+        inputs=inputs,
+        outputs=outputs,
+        additional_inputs=[
+            whisper_models,
+            molmo_models,
+            sam_models,
+            clip_checkbox,
+            bbox_checkbox,
+            seq_proc_checkbox,
+            rnd_col_mask_checkbox,
+            chat_only_checkbox
+        ],
+        description=f"Upload an image and provide a prompt to segment specific objects in the image. \
+                    Text box input takes precedence. Text box needs to be empty to prompt via voice."
+    )
+
+with gr.Blocks(
+    title='Video Segmentation with SAM2, Molmo, and Whisper'
+) as video_interface:
+    inputs = [
         gr.Video(label='Upload Image'),
         gr.Textbox(label='Prompt', placeholder='e.g., Point where the dog is.'),
         gr.Audio(sources=['microphone'])
-    ],
-    outputs=[
+    ]
+    outputs = [
         gr.Video(label='Segmentation Result', format='webm'),
         gr.Textbox(label='Molmo Output'),
         gr.Textbox(label='Whisper Output'),
-    ],
-    additional_inputs=[
-        gr.Dropdown(
-            label='Whisper Models',
-            choices=(
-                'openai/whisper-tiny',
-                'openai/whisper-base',
-                'openai/whisper-small',
-                'openai/whisper-medium',
-                'openai/whisper-large-v3',
-                'openai/whisper-large-v3-turbo',
-            ),
-            value='openai/whisper-small'
+    ]
+    
+    # Additional inputs.
+    whisper_models = gr.Dropdown(
+        label='Whisper Models',
+        choices=(
+            'openai/whisper-tiny',
+            'openai/whisper-base',
+            'openai/whisper-small',
+            'openai/whisper-medium',
+            'openai/whisper-large-v3',
+            'openai/whisper-large-v3-turbo',
         ),
-        gr.Dropdown(
-            label='Molmo Models',
-            choices=(
-                'allenai/MolmoE-1B-0924',
-                'allenai/Molmo-7B-O-0924',
-                'allenai/Molmo-7B-D-0924',
-                'allenai/Molmo-72B-0924',
-            ),
-            value='allenai/MolmoE-1B-0924'
+        value='openai/whisper-small'
+    )
+
+    molmo_models = gr.Dropdown(
+        label='Molmo Models',
+        choices=(
+            'allenai/MolmoE-1B-0924',
+            'allenai/Molmo-7B-O-0924',
+            'allenai/Molmo-7B-D-0924',
+            'allenai/Molmo-72B-0924',
         ),
-        gr.Dropdown(
-            label='SAM Models',
-            choices=(
-                'facebook/sam2.1-hiera-tiny',
-                'facebook/sam2.1-hiera-small',
-                'facebook/sam2.1-hiera-base-plus',
-                'facebook/sam2.1-hiera-large',
-            ),
-            value='facebook/sam2.1-hiera-large'
+        value='allenai/MolmoE-1B-0924'
+    )
+
+    sam_models = gr.Dropdown(
+        label='SAM Models',
+        choices=(
+            'facebook/sam2.1-hiera-tiny',
+            'facebook/sam2.1-hiera-small',
+            'facebook/sam2.1-hiera-base-plus',
+            'facebook/sam2.1-hiera-large',
         ),
-    ],
-    title='Video Segmentation with SAM2, Molmo, and Whisper',
-    description=f"Upload a video and provide a prompt to segment specific objects in the video. \
-                Text box input takes precedence. Text box needs to be empty to prompt via voice."
-)
+        value='facebook/sam2.1-hiera-large'
+    )
+
+    gr.Interface(
+        fn=process_video,
+        inputs=inputs,
+        outputs=outputs,
+        additional_inputs=[
+            whisper_models,
+            molmo_models,
+            sam_models
+        ],
+        description=f"Upload a video and provide a prompt to segment specific objects in the video. \
+                    Text box input takes precedence. Text box needs to be empty to prompt via voice."
+    )
 
 if __name__ == '__main__':
     # A temporary directory to save extracted frames for video segmentation.
