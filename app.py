@@ -387,16 +387,15 @@ def process_video(
 with gr.Blocks(
     title='Image Segmentation with SAM2, Molmo, and Whisper'
 ) as image_interface:
-    inputs = [
-            gr.Image(type='pil', label='Upload Image'),
-            gr.Textbox(label='Prompt', placeholder='e.g., Point where the dog is.'),
-            gr.Audio(sources=['microphone'])
-        ]
-    outputs = [
-            gr.Plot(label='Segmentation Result', format='png'),
-            gr.Textbox(label='Molmo Output'),
-            gr.Textbox(label='Whisper Output'),
-        ]
+    # Inputs.
+    img_input = gr.Image(type='pil', label='Upload Image')
+    txt_input = gr.Textbox(label='Prompt', placeholder='e.g., Point where the dog is.')
+    audio_input = gr.Audio(sources=['microphone'])
+    
+    # Outputs.
+    img_plt_out = gr.Plot(label='Segmentation Result', format='png')
+    molmo_out = gr.Textbox(label='Molmo Output')
+    whisper_out = gr.Textbox(label='Whisper Output')
     
     # Additional inputs.
     whisper_models = gr.Dropdown(
@@ -470,8 +469,12 @@ with gr.Blocks(
 
     gr.Interface(
         fn=process_image,
-        inputs=inputs,
-        outputs=outputs,
+        inputs=[
+            img_input, txt_input, audio_input
+        ],
+        outputs=[
+            img_plt_out, molmo_out, whisper_out
+        ],
         additional_inputs=[
             whisper_models,
             molmo_models,
@@ -489,16 +492,15 @@ with gr.Blocks(
 with gr.Blocks(
     title='Video Segmentation with SAM2, Molmo, and Whisper'
 ) as video_interface:
-    inputs = [
-        gr.Video(label='Upload Image'),
-        gr.Textbox(label='Prompt', placeholder='e.g., Point where the dog is.'),
-        gr.Audio(sources=['microphone'])
-    ]
-    outputs = [
-        gr.Video(label='Segmentation Result', format='webm'),
-        gr.Textbox(label='Molmo Output'),
-        gr.Textbox(label='Whisper Output'),
-    ]
+    # Inputs.
+    vid_input = gr.Video(label='Upload Image')
+    txt_input = gr.Textbox(label='Prompt', placeholder='e.g., Point where the dog is.')
+    audio_input = gr.Audio(sources=['microphone'])
+
+    # Outputs.
+    vid_out = gr.Video(label='Segmentation Result', format='webm')
+    molmo_out = gr.Textbox(label='Molmo Output')
+    whisper_out = gr.Textbox(label='Whisper Output')
     
     # Additional inputs.
     whisper_models = gr.Dropdown(
@@ -538,8 +540,12 @@ with gr.Blocks(
 
     gr.Interface(
         fn=process_video,
-        inputs=inputs,
-        outputs=outputs,
+        inputs=[
+            vid_input, txt_input, audio_input
+        ],
+        outputs=[
+            vid_out, molmo_out, whisper_out
+        ],
         additional_inputs=[
             whisper_models,
             molmo_models,
