@@ -569,15 +569,24 @@ if __name__ == '__main__':
     os.makedirs(output_dir, exist_ok=True)
 
     # Gradio interface.
-    iface = gr.TabbedInterface(
-        [
-            image_interface, 
-            video_interface
-        ],
-        tab_names=[
-            'Image processing',
-            'Video processing'
-        ]
-    )
+    with gr.Blocks() as iface:
+        with gr.Tab('Image processing'):
+            image_interface.render()
+        
+        with gr.Tab('Video Processing'):
+            video_interface.render()
+
+    # iface = gr.TabbedInterface(
+    #     [
+    #         image_interface, 
+    #         video_interface,
+    #         demo
+    #     ],
+    #     tab_names=[
+    #         'Image processing',
+    #         'Video processing',
+    #         'Point processor'
+    #     ]
+    # )
     
     iface.launch(share=True)
