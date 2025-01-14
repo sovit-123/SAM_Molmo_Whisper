@@ -5,7 +5,7 @@ import os
 import shutil
 import gc
 
-from PIL import Image
+from PIL import Image, ImageDraw
 from utils.sam_utils import show_masks
 from utils.general import (
     get_coords, 
@@ -67,6 +67,7 @@ def process_image(
     global molmo_model
     global sam_predictor
     global transcriber
+    global clicked_points
 
     coords = []
 
@@ -108,8 +109,11 @@ def process_image(
     molmo_output = get_coords(output, image)
 
     if type(molmo_output) == str: # If we get image caption instead of points.
+        # Clear mouse click prompts after one successful run.
+        clicked_points = []
         return  plot_image(image), output, transcribed_text
     
+    coords.extend(clicked_points)
     coords.extend(molmo_output)
     
     # Load CLIP and Spacy models if `clip_label` is True.
@@ -187,6 +191,8 @@ def process_image(
             random_color=random_color
         )
 
+        # Clear mouse click prompts after one successful run.
+        clicked_points = []
         return fig, output, transcribed_text
     
     if not chat_only and  sequential_processing: # If sequential processing of points is enabled without CLIP.
@@ -228,7 +234,9 @@ def process_image(
             draw_bbox=draw_bbox,
             random_color=random_color
         )
-
+        
+        # Clear mouse click prompts after one successful run.
+        clicked_points = []
         return fig, output, transcribed_text
     
     else:
@@ -250,6 +258,8 @@ def process_image(
             chat_only=chat_only
         )
         
+        # Clear mouse click prompts after one successful run.
+        clicked_points = []
         return fig, output, transcribed_text
 
 def process_video(
@@ -391,6 +401,31 @@ def process_video(
     
     return os.path.join(output_dir, 'molmo_points_output.webm'), output, transcribed_text
 
+# Global list to store clicked points
+clicked_points = []
+
+def draw_circle_on_img(img, center, radius=10, color=[255, 0, 0]):
+    """Draw a circle on the image with the given radius and color."""
+    x, y = center
+    point_radius, point_color = 5, (255, 255, 0)
+    draw = ImageDraw.Draw(img)
+    draw.ellipse([(x - point_radius, y - point_radius), (x + point_radius, y + point_radius)], fill=point_color)
+    return img
+
+def get_click_coords(img, evt: gr.SelectData):
+    """Handle the click event and draw a circle at the clicked coordinates."""
+    global clicked_points
+
+    out = Image.open(img)
+    if len(clicked_points) < 5:
+        clicked_points.append((evt.index[0], evt.index[1]))
+    
+    for point in clicked_points:
+        out = draw_circle_on_img(out, point)
+
+    return out
+
+
 with gr.Blocks(
     title='Image Segmentation with SAM2, Molmo, and Whisper'
 ) as image_interface:
@@ -403,6 +438,12 @@ with gr.Blocks(
     img_plt_out = gr.Plot(label='Segmentation Result', format='png')
     molmo_out = gr.Textbox(label='Molmo Output')
     whisper_out = gr.Textbox(label='Whisper Output')
+
+    with gr.Row():
+        with gr.Column():
+            pointed_image = gr.Image(type='pil', label='Image with points')
+
+    img_input.select(get_click_coords, [img_input], [pointed_image])
     
     # Additional inputs.
     whisper_models = gr.Dropdown(
