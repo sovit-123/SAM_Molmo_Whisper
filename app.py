@@ -30,7 +30,7 @@ sam_predictor = None
 transcriber = None
 
 def process_image(
-    image, 
+    image_path, 
     prompt, 
     audio,
     whisper_tag,
@@ -70,6 +70,8 @@ def process_image(
 
     coords = []
 
+    image = Image.open(image_path)
+
     # Check if user chose different model, and load appropriately.
     if molmo_tag != molmo_model_name:
         gr.Info(message=f"Loading {molmo_tag}", duration=20)
@@ -103,11 +105,12 @@ def process_image(
         prompt
     )
 
-    molmo_coords = get_coords(output, image)
-    coords.extend(molmo_coords)
+    molmo_output = get_coords(output, image)
 
-    if type(coords) == str: # If we get image caption instead of points.
+    if type(molmo_output) == str: # If we get image caption instead of points.
         return  plot_image(image), output, transcribed_text
+    
+    coords.extend(molmo_output)
     
     # Load CLIP and Spacy models if `clip_label` is True.
     if clip_label:
@@ -335,8 +338,8 @@ def process_video(
 
     print(prompt)
 
-    molmo_coords = get_coords(output, image)
-    coords.extend(molmo_coords)
+    molmo_output = get_coords(output, image)
+    coords.extend(molmo_output)
 
     if type(coords) == str: # If we get image caption instead of points.
         return  plot_image(image), output, transcribed_text
@@ -392,7 +395,7 @@ with gr.Blocks(
     title='Image Segmentation with SAM2, Molmo, and Whisper'
 ) as image_interface:
     # Inputs.
-    img_input = gr.Image(type='pil', label='Upload Image')
+    img_input = gr.Image(type='filepath', label='Upload Image')
     txt_input = gr.Textbox(label='Prompt', placeholder='e.g., Point where the dog is.')
     audio_input = gr.Audio(sources=['microphone'])
     
