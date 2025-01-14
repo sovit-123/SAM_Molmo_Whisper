@@ -103,7 +103,8 @@ def process_image(
         prompt
     )
 
-    coords = get_coords(output, image)
+    molmo_coords = get_coords(output, image)
+    coords.extend(molmo_coords)
 
     if type(coords) == str: # If we get image caption instead of points.
         return  plot_image(image), output, transcribed_text
@@ -281,6 +282,8 @@ def process_video(
     global sam_predictor
     global transcriber
 
+    coords = []
+
     sam_device_string = 'cuda'
 
     extract_video_frame(video=video, path=temp_dir)
@@ -332,7 +335,8 @@ def process_video(
 
     print(prompt)
 
-    coords = get_coords(output, image)
+    molmo_coords = get_coords(output, image)
+    coords.extend(molmo_coords)
 
     if type(coords) == str: # If we get image caption instead of points.
         return  plot_image(image), output, transcribed_text
