@@ -68,6 +68,8 @@ def process_image(
     global sam_predictor
     global transcriber
 
+    coords = []
+
     # Check if user chose different model, and load appropriately.
     if molmo_tag != molmo_model_name:
         gr.Info(message=f"Loading {molmo_tag}", duration=20)
@@ -101,7 +103,8 @@ def process_image(
         prompt
     )
 
-    coords = get_coords(output, image)
+    molmo_coords = get_coords(output, image)
+    coords.extend(molmo_coords)
 
     if type(coords) == str: # If we get image caption instead of points.
         return  plot_image(image), output, transcribed_text
@@ -279,6 +282,8 @@ def process_video(
     global sam_predictor
     global transcriber
 
+    coords = []
+
     sam_device_string = 'cuda'
 
     extract_video_frame(video=video, path=temp_dir)
@@ -330,7 +335,8 @@ def process_video(
 
     print(prompt)
 
-    coords = get_coords(output, image)
+    molmo_coords = get_coords(output, image)
+    coords.extend(molmo_coords)
 
     if type(coords) == str: # If we get image caption instead of points.
         return  plot_image(image), output, transcribed_text
@@ -371,9 +377,9 @@ def process_video(
     
     # Get the frame names for saving the final video.
     frame_names = [
-    p for p in os.listdir(temp_dir)
-    if os.path.splitext(p)[-1] in ['.jpg', '.jpeg', '.JPG', '.JPEG']
-]
+        p for p in os.listdir(temp_dir)
+        if os.path.splitext(p)[-1] in ['.jpg', '.jpeg', '.JPG', '.JPEG']
+    ]
     frame_names.sort(key=lambda p: int(os.path.splitext(p)[0]))
 
     # Save video.
@@ -382,136 +388,176 @@ def process_video(
     
     return os.path.join(output_dir, 'molmo_points_output.webm'), output, transcribed_text
 
-image_interface = gr.Interface(
-    fn=process_image,
-    inputs=[
-        gr.Image(type='pil', label='Upload Image'),
-        gr.Textbox(label='Prompt', placeholder='e.g., Point where the dog is.'),
-        gr.Audio(sources=['microphone'])
-    ],
-    outputs=[
-        gr.Plot(label='Segmentation Result', format='png'),
-        gr.Textbox(label='Molmo Output'),
-        gr.Textbox(label='Whisper Output'),
-    ],
-    additional_inputs=[
-        gr.Dropdown(
-            label='Whisper Models',
-            choices=(
-                'openai/whisper-tiny',
-                'openai/whisper-base',
-                'openai/whisper-small',
-                'openai/whisper-medium',
-                'openai/whisper-large-v3',
-                'openai/whisper-large-v3-turbo',
-            ),
-            value='openai/whisper-small'
+with gr.Blocks(
+    title='Image Segmentation with SAM2, Molmo, and Whisper'
+) as image_interface:
+    # Inputs.
+    img_input = gr.Image(type='pil', label='Upload Image')
+    txt_input = gr.Textbox(label='Prompt', placeholder='e.g., Point where the dog is.')
+    audio_input = gr.Audio(sources=['microphone'])
+    
+    # Outputs.
+    img_plt_out = gr.Plot(label='Segmentation Result', format='png')
+    molmo_out = gr.Textbox(label='Molmo Output')
+    whisper_out = gr.Textbox(label='Whisper Output')
+    
+    # Additional inputs.
+    whisper_models = gr.Dropdown(
+        label='Whisper Models',
+        choices=(
+            'openai/whisper-tiny',
+            'openai/whisper-base',
+            'openai/whisper-small',
+            'openai/whisper-medium',
+            'openai/whisper-large-v3',
+            'openai/whisper-large-v3-turbo',
         ),
-        gr.Dropdown(
-            label='Molmo Models',
-            choices=(
-                'allenai/MolmoE-1B-0924',
-                'allenai/Molmo-7B-O-0924',
-                'allenai/Molmo-7B-D-0924',
-                'allenai/Molmo-72B-0924',
-            ),
-            value='allenai/MolmoE-1B-0924'
-        ),
-        gr.Dropdown(
-            label='SAM Models',
-            choices=(
-                'facebook/sam2.1-hiera-tiny',
-                'facebook/sam2.1-hiera-small',
-                'facebook/sam2.1-hiera-base-plus',
-                'facebook/sam2.1-hiera-large',
-            ),
-            value='facebook/sam2.1-hiera-large'
-        ),
-        gr.Checkbox(
-            value=False, 
-            label='Enable CLIP Auto Labelling.',
-            info='Slower but gives better segmentations maps along with labels'
-        ),
-        gr.Checkbox(
-            value=False, 
-            label='Draw Bounding Boxes',
-            info='Whether to draw bounding boxes around the segmentation objects. \
-                  Works best with CLIP Auto Labelling.'
-        ),
-        gr.Checkbox(
-            value=False, 
-            label='Sequential Processing',
-            info='Process Molmo points sequentially generating one mask at a time. \
-                  Slower but more accurate masks.'
-        ),
-        gr.Checkbox(
-            value=False,
-            label='Random color Mask',
-            info='Randomly choose a mask color.'
-        ),
-        gr.Checkbox(
-            value=False,
-            label='Chat Only Mode',
-            info='If wanting pointing and chatting only without SAM \
-                  segmentation (saves inference time and memory). All other \
-                  above checkboxes will be ignored.'
-        )
-    ],
-    title='Image Segmentation with SAM2, Molmo, and Whisper',
-    description=f"Upload an image and provide a prompt to segment specific objects in the image. \
-                Text box input takes precedence. Text box needs to be empty to prompt via voice."
-)
+        value='openai/whisper-small'
+    )
 
-video_interface = gr.Interface(
-    fn=process_video,
-    inputs=[
-        gr.Video(label='Upload Image'),
-        gr.Textbox(label='Prompt', placeholder='e.g., Point where the dog is.'),
-        gr.Audio(sources=['microphone'])
-    ],
-    outputs=[
-        gr.Video(label='Segmentation Result', format='webm'),
-        gr.Textbox(label='Molmo Output'),
-        gr.Textbox(label='Whisper Output'),
-    ],
-    additional_inputs=[
-        gr.Dropdown(
-            label='Whisper Models',
-            choices=(
-                'openai/whisper-tiny',
-                'openai/whisper-base',
-                'openai/whisper-small',
-                'openai/whisper-medium',
-                'openai/whisper-large-v3',
-                'openai/whisper-large-v3-turbo',
-            ),
-            value='openai/whisper-small'
+    molmo_models = gr.Dropdown(
+        label='Molmo Models',
+        choices=(
+            'allenai/MolmoE-1B-0924',
+            'allenai/Molmo-7B-O-0924',
+            'allenai/Molmo-7B-D-0924',
+            'allenai/Molmo-72B-0924',
         ),
-        gr.Dropdown(
-            label='Molmo Models',
-            choices=(
-                'allenai/MolmoE-1B-0924',
-                'allenai/Molmo-7B-O-0924',
-                'allenai/Molmo-7B-D-0924',
-                'allenai/Molmo-72B-0924',
-            ),
-            value='allenai/MolmoE-1B-0924'
+        value='allenai/MolmoE-1B-0924'
+    )
+
+    sam_models = gr.Dropdown(
+        label='SAM Models',
+        choices=(
+            'facebook/sam2.1-hiera-tiny',
+            'facebook/sam2.1-hiera-small',
+            'facebook/sam2.1-hiera-base-plus',
+            'facebook/sam2.1-hiera-large',
         ),
-        gr.Dropdown(
-            label='SAM Models',
-            choices=(
-                'facebook/sam2.1-hiera-tiny',
-                'facebook/sam2.1-hiera-small',
-                'facebook/sam2.1-hiera-base-plus',
-                'facebook/sam2.1-hiera-large',
-            ),
-            value='facebook/sam2.1-hiera-large'
+        value='facebook/sam2.1-hiera-large'
+    )
+
+    clip_checkbox = gr.Checkbox(
+        value=False, 
+        label='Enable CLIP Auto Labelling.',
+        info='Slower but gives better segmentations maps along with labels'
+    )
+
+    bbox_checkbox = gr.Checkbox(
+        value=False, 
+        label='Draw Bounding Boxes',
+        info='Whether to draw bounding boxes around the segmentation objects. \
+            Works best with CLIP Auto Labelling.'
+    )
+
+    seq_proc_checkbox = gr.Checkbox(
+        value=False, 
+        label='Sequential Processing',
+        info='Process Molmo points sequentially generating one mask at a time. \
+            Slower but more accurate masks.'
+    )
+
+    rnd_col_mask_checkbox = gr.Checkbox(
+        value=False,
+        label='Random color Mask',
+        info='Randomly choose a mask color.'
+    )
+
+    chat_only_checkbox = gr.Checkbox(
+        value=False,
+        label='Chat Only Mode',
+        info='If wanting pointing and chatting only without SAM \
+            segmentation (saves inference time and memory). All other \
+            above checkboxes will be ignored.'
+    )
+
+    gr.Interface(
+        fn=process_image,
+        inputs=[
+            img_input, txt_input, audio_input
+        ],
+        outputs=[
+            img_plt_out, molmo_out, whisper_out
+        ],
+        additional_inputs=[
+            whisper_models,
+            molmo_models,
+            sam_models,
+            clip_checkbox,
+            bbox_checkbox,
+            seq_proc_checkbox,
+            rnd_col_mask_checkbox,
+            chat_only_checkbox
+        ],
+        description=f"Upload an image and provide a prompt to segment specific objects in the image. \
+                    Text box input takes precedence. Text box needs to be empty to prompt via voice."
+    )
+
+with gr.Blocks(
+    title='Video Segmentation with SAM2, Molmo, and Whisper'
+) as video_interface:
+    # Inputs.
+    vid_input = gr.Video(label='Upload Image')
+    txt_input = gr.Textbox(label='Prompt', placeholder='e.g., Point where the dog is.')
+    audio_input = gr.Audio(sources=['microphone'])
+
+    # Outputs.
+    vid_out = gr.Video(label='Segmentation Result', format='webm')
+    molmo_out = gr.Textbox(label='Molmo Output')
+    whisper_out = gr.Textbox(label='Whisper Output')
+    
+    # Additional inputs.
+    whisper_models = gr.Dropdown(
+        label='Whisper Models',
+        choices=(
+            'openai/whisper-tiny',
+            'openai/whisper-base',
+            'openai/whisper-small',
+            'openai/whisper-medium',
+            'openai/whisper-large-v3',
+            'openai/whisper-large-v3-turbo',
         ),
-    ],
-    title='Video Segmentation with SAM2, Molmo, and Whisper',
-    description=f"Upload a video and provide a prompt to segment specific objects in the video. \
-                Text box input takes precedence. Text box needs to be empty to prompt via voice."
-)
+        value='openai/whisper-small'
+    )
+
+    molmo_models = gr.Dropdown(
+        label='Molmo Models',
+        choices=(
+            'allenai/MolmoE-1B-0924',
+            'allenai/Molmo-7B-O-0924',
+            'allenai/Molmo-7B-D-0924',
+            'allenai/Molmo-72B-0924',
+        ),
+        value='allenai/MolmoE-1B-0924'
+    )
+
+    sam_models = gr.Dropdown(
+        label='SAM Models',
+        choices=(
+            'facebook/sam2.1-hiera-tiny',
+            'facebook/sam2.1-hiera-small',
+            'facebook/sam2.1-hiera-base-plus',
+            'facebook/sam2.1-hiera-large',
+        ),
+        value='facebook/sam2.1-hiera-large'
+    )
+
+    gr.Interface(
+        fn=process_video,
+        inputs=[
+            vid_input, txt_input, audio_input
+        ],
+        outputs=[
+            vid_out, molmo_out, whisper_out
+        ],
+        additional_inputs=[
+            whisper_models,
+            molmo_models,
+            sam_models
+        ],
+        description=f"Upload a video and provide a prompt to segment specific objects in the video. \
+                    Text box input takes precedence. Text box needs to be empty to prompt via voice."
+    )
 
 if __name__ == '__main__':
     # A temporary directory to save extracted frames for video segmentation.
@@ -527,15 +573,24 @@ if __name__ == '__main__':
     os.makedirs(output_dir, exist_ok=True)
 
     # Gradio interface.
-    iface = gr.TabbedInterface(
-        [
-            image_interface, 
-            video_interface
-        ],
-        tab_names=[
-            'Image processing',
-            'Video processing'
-        ]
-    )
+    with gr.Blocks() as iface:
+        with gr.Tab('Image processing'):
+            image_interface.render()
+        
+        with gr.Tab('Video Processing'):
+            video_interface.render()
+
+    # iface = gr.TabbedInterface(
+    #     [
+    #         image_interface, 
+    #         video_interface,
+    #         demo
+    #     ],
+    #     tab_names=[
+    #         'Image processing',
+    #         'Video processing',
+    #         'Point processor'
+    #     ]
+    # )
     
     iface.launch(share=True)

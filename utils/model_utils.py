@@ -73,7 +73,13 @@ def get_whisper_output(audio, model):
         transcripted_text: The transcripted text from Whisper.
         prompt: The updated prompt.
     """
-    sr, y = audio
+    prompt, transcribed_text = '', ''
+
+    try:
+        sr, y = audio
+    except:
+        return transcribed_text, prompt
+    
     # Convert to mono if stereo
     if y.ndim > 1:
         y = y.mean(axis=1)
