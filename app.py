@@ -373,9 +373,9 @@ def process_video(
     
     # Get the frame names for saving the final video.
     frame_names = [
-    p for p in os.listdir(temp_dir)
-    if os.path.splitext(p)[-1] in ['.jpg', '.jpeg', '.JPG', '.JPEG']
-]
+        p for p in os.listdir(temp_dir)
+        if os.path.splitext(p)[-1] in ['.jpg', '.jpeg', '.JPG', '.JPEG']
+    ]
     frame_names.sort(key=lambda p: int(os.path.splitext(p)[0]))
 
     # Save video.
