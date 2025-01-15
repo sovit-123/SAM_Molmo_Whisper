@@ -108,13 +108,19 @@ def process_image(
 
     molmo_output = get_coords(output, image)
 
-    if type(molmo_output) == str: # If we get image caption instead of points.
+    if type(molmo_output) == str and len(clicked_points) == 0: # If we get image caption instead of points.
         # Clear mouse click prompts after one successful run.
         clicked_points = []
         return  plot_image(image), output, transcribed_text
     
+     # There is a chance the user clicks points and Molmo outputs string. In
+     # that case, we do not want to append the Molmo string output to `coords`
+     # but only the clicked points.
+    if type(molmo_output) != str:
+        coords.extend(molmo_output)
+    
+    # Append the clicked points to `coords`.
     coords.extend(clicked_points)
-    coords.extend(molmo_output)
     
     # Load CLIP and Spacy models if `clip_label` is True.
     if clip_label:
@@ -417,8 +423,7 @@ def get_click_coords(img, evt: gr.SelectData):
     global clicked_points
 
     out = Image.open(img)
-    if len(clicked_points) < 5:
-        clicked_points.append((evt.index[0], evt.index[1]))
+    clicked_points.append((evt.index[0], evt.index[1]))
     
     for point in clicked_points:
         out = draw_circle_on_img(out, point)
