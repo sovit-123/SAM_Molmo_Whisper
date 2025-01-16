@@ -104,6 +104,7 @@ def get_spacy_output(outputs, model):
         nouns: A list containing the nouns, e.g. ['bird', 'person']
     """
     print(outputs)
+    nouns = ['']
     if 'alt=\"' in outputs:
         match = re.search(r'alt="([^"]*)"', outputs)
         if match:
