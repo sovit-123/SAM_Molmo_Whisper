@@ -17,7 +17,7 @@ from utils.model_utils import (
     get_whisper_output, get_molmo_output, get_sam_output, get_spacy_output
 )
 from utils.load_models import (
-    load_molmo, load_sam, load_whisper, load_sam_video, load_clip, load_spacy
+    load_molmo, load_sam, load_whisper, load_sam_video, load_siglip, load_spacy
 )
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -125,7 +125,8 @@ def process_image(
     # Load CLIP and Spacy models if `clip_label` is True.
     if clip_label:
         spacy_nlp = load_spacy()
-        clip_processor, clip_model = load_clip()
+        # clip_processor, clip_model = load_clip()
+        clip_processor, clip_model = load_siglip()
 
         # Get the nouns list.
         nouns = get_spacy_output(outputs=output, model=spacy_nlp)
@@ -415,7 +416,13 @@ def draw_circle_on_img(img, center, radius=10, color=[255, 0, 0]):
     x, y = center
     point_radius, point_color = 5, (255, 255, 0)
     draw = ImageDraw.Draw(img)
-    draw.ellipse([(x - point_radius, y - point_radius), (x + point_radius, y + point_radius)], fill=point_color)
+    draw.ellipse(
+        [
+            (x - point_radius, y - point_radius), 
+            (x + point_radius, y + point_radius)
+        ],
+        fill=point_color
+    )
     return img
 
 def get_click_coords(img, evt: gr.SelectData):
