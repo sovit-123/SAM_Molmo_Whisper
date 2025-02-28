@@ -9,7 +9,8 @@ from transformers import (
     BitsAndBytesConfig,
     pipeline,
     CLIPProcessor,
-    CLIPModel
+    CLIPModel,
+    AutoModel
 )
 
 import spacy
@@ -71,6 +72,18 @@ def load_clip():
         'openai/clip-vit-base-patch32'
     )
     return clip_processor, clip_model
+
+def load_siglip():
+    """
+    Loads the CLIP model for auto classification.
+    """
+    siglip_model = AutoModel.from_pretrained(
+        'google/siglip-so400m-patch14-384', device_map='cpu'
+    )
+    siglip_processor = AutoProcessor.from_pretrained(
+        'google/siglip-so400m-patch14-384'
+    )
+    return siglip_processor, siglip_model
 
 def load_spacy():
     """
